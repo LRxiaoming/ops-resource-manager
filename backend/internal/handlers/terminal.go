@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,7 +15,7 @@ import (
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
-	WriteBufferSize:  1024,
+	WriteBufferSize: 1024,
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
@@ -25,6 +26,7 @@ type TerminalSession struct {
 	SSHSession *ssh.Session
 	Stdin      io.Writer
 	Mu         sync.Mutex
+	closed     atomic.Bool
 }
 
 type TerminalHandler struct{}
@@ -42,6 +44,7 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 	defer conn.Close()
 
 	var termSession *TerminalSession
+	var sessionMu sync.Mutex
 
 	for {
 		_, msg, err := conn.ReadMessage()
@@ -75,16 +78,23 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 				continue
 			}
 
+			sessionMu.Lock()
 			termSession = session
+			sessionMu.Unlock()
+
 			conn.WriteMessage(websocket.TextMessage, []byte("Cconnected"))
 
-			go h.forwardOutput(termSession, conn)
+			go h.forwardOutput(termSession, conn, &sessionMu)
 
 		case "I": // Input
-			if termSession != nil {
-				termSession.Mu.Lock()
-				stdin := termSession.Stdin
-				termSession.Mu.Unlock()
+			sessionMu.Lock()
+			session := termSession
+			sessionMu.Unlock()
+
+			if session != nil && !session.closed.Load() {
+				session.Mu.Lock()
+				stdin := session.Stdin
+				session.Mu.Unlock()
 
 				if stdin != nil {
 					stdin.Write([]byte(content))
@@ -92,27 +102,42 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 			}
 
 		case "R": // Resize
-			if termSession != nil {
+			sessionMu.Lock()
+			session := termSession
+			sessionMu.Unlock()
+
+			if session != nil && !session.closed.Load() {
 				parts := splitString(content, "\n")
 				if len(parts) == 2 {
 					var cols, rows int
 					fmt.Sscanf(parts[0], "%d", &cols)
 					fmt.Sscanf(parts[1], "%d", &rows)
-					termSession.SSHSession.WindowChange(rows, cols)
+					session.SSHSession.WindowChange(rows, cols)
 				}
 			}
 
 		case "D": // Disconnect
-			if termSession != nil {
-				termSession.SSHSession.Close()
-				termSession.SSHClient.Close()
+			sessionMu.Lock()
+			session := termSession
+			sessionMu.Unlock()
+
+			if session != nil {
+				session.closed.Store(true)
+				session.SSHSession.Close()
+				session.SSHClient.Close()
 			}
 		}
 	}
 
-	if termSession != nil {
-		termSession.SSHSession.Close()
-		termSession.SSHClient.Close()
+	// Final cleanup
+	sessionMu.Lock()
+	session := termSession
+	sessionMu.Unlock()
+
+	if session != nil {
+		session.closed.Store(true)
+		session.SSHSession.Close()
+		session.SSHClient.Close()
 	}
 }
 
@@ -172,8 +197,17 @@ func (h *TerminalHandler) connectSSH(ip, port, username, password string) (*Term
 	}, nil
 }
 
-func (h *TerminalHandler) forwardOutput(session *TerminalSession, conn *websocket.Conn) {
+func (h *TerminalHandler) forwardOutput(session *TerminalSession, conn *websocket.Conn, sessionMu *sync.Mutex) {
+	// First check if session is already closed
+	if session.closed.Load() {
+		return
+	}
+
 	session.Mu.Lock()
+	if session.closed.Load() {
+		session.Mu.Unlock()
+		return
+	}
 	stdout, err := session.SSHSession.StdoutPipe()
 	if err != nil {
 		session.Mu.Unlock()
@@ -191,24 +225,30 @@ func (h *TerminalHandler) forwardOutput(session *TerminalSession, conn *websocke
 
 	go func() {
 		defer wg.Done()
-		io.Copy(connWriteWrapper{conn}, stdout)
+		io.Copy(connWriteWrapper{conn, session}, stdout)
 	}()
 
 	go func() {
 		defer wg.Done()
-		io.Copy(connWriteWrapper{conn}, stderr)
+		io.Copy(connWriteWrapper{conn, session}, stderr)
 	}()
 
 	wg.Wait()
 }
 
 type connWriteWrapper struct {
-	conn *websocket.Conn
+	conn    *websocket.Conn
+	session *TerminalSession
 }
 
 func (w connWriteWrapper) Write(p []byte) (n int, err error) {
-	if len(p) > 0 {
-		w.conn.WriteMessage(websocket.TextMessage, p)
+	if len(p) == 0 || w.session.closed.Load() {
+		return 0, io.EOF
+	}
+	err = w.conn.WriteMessage(websocket.TextMessage, p)
+	if err != nil {
+		w.session.closed.Store(true)
+		return 0, err
 	}
 	return len(p), nil
 }
