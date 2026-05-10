@@ -1,0 +1,9 @@
+{
+  "name": "frontend-test",
+  "version": "1.0.0",
+  "description": "Simple frontend test project",
+  "scripts": {
+    "dev": "npx serve . -p 3000",
+    "start": "npx serve . -p 3000"
+  }
+}

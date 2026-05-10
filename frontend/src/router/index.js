@@ -30,6 +30,11 @@ const routes = [
         path: 'users',
         name: 'Users',
         component: () => import('@/views/Users.vue')
+      },
+      {
+        path: 'terminal/:assetId',
+        name: 'Terminal',
+        component: () => import('@/views/Terminal.vue')
       }
     ]
   }

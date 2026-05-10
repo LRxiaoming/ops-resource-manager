@@ -52,3 +52,14 @@ type Approval struct {
 	Comment   string    `gorm:"type:text" json:"comment"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type TerminalSession struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	AssetID   uint       `json:"asset_id"`
+	UserID    uint       `json:"user_id"`
+	IP        string     `json:"ip"`
+	Username  string     `json:"username"`
+	Status    string     `json:"status"` // connected, disconnected
+	ConnectedAt time.Time `json:"connected_at"`
+	DisconnectedAt *time.Time `json:"disconnected_at,omitempty"`
+}

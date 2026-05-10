@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker 部署测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .status {
+            color: #667eea;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .timestamp {
+            color: #999;
+            font-size: 14px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐳 Docker 部署成功!</h1>
+        <p class="status" id="status">正在检查环境...</p>
+        <p class="timestamp" id="time"></p>
+        <button class="btn" onclick="refreshTime()">更新时间</button>
+    </div>
+
+    <script>
+        function refreshTime() {
+            const now = new Date();
+            document.getElementById('time').textContent = '当前时间: ' + now.toLocaleString('zh-CN');
+            document.getElementById('status').textContent = '✅ 容器运行正常!';
+        }
+
+        refreshTime();
+    </script>
+</body>
+</html>

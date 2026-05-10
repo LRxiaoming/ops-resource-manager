@@ -25,7 +25,7 @@ func main() {
 		log.Fatal("Failed to connect to database:", err)
 	}
 
-	db.AutoMigrate(&models.User{}, &models.Asset{}, &models.Ticket{}, &models.Approval{})
+	db.AutoMigrate(&models.User{}, &models.Asset{}, &models.Ticket{}, &models.Approval{}, &models.TerminalSession{})
 
 	r := gin.Default()
 
@@ -45,6 +45,7 @@ func main() {
 	assetHandler := handlers.NewAssetHandler(db)
 	ticketHandler := handlers.NewTicketHandler(db)
 	dashboardHandler := handlers.NewDashboardHandler(db)
+	terminalHandler := handlers.NewTerminalHandler()
 
 	api := r.Group("/api")
 	{
@@ -92,6 +93,8 @@ func main() {
 			}
 		}
 	}
+
+	r.GET("/ws/terminal", terminalHandler.HandleTerminal)
 
 	r.Run(":" + cfg.ServerPort)
 }

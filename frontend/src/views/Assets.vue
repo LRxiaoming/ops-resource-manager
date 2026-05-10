@@ -33,9 +33,10 @@
             <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
+        <el-table-column label="操作" width="200">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button size="small" type="primary" @click="openTerminal(row)">终端</el-button>
             <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -89,8 +90,11 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import api from '../api'
+
+const router = useRouter()
 
 const assets = ref([])
 const dialogVisible = ref(false)
@@ -172,6 +176,10 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   const map = { online: '在线', offline: '离线', maintenance: '维护中' }
   return map[status] || status
+}
+
+const openTerminal = (row) => {
+  router.push(`/terminal/${row.id}?ip=${row.ip}&port=22`)
 }
 
 onMounted(fetchAssets)
