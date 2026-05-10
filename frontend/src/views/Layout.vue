@@ -26,7 +26,7 @@
           <span>用户管理</span>
         </el-menu-item>
         <el-menu-item index="/terminal">
-          <el-icon><Terminal /></el-icon>
+          <el-icon><Monitor /></el-icon>
           <span>远程终端</span>
         </el-menu-item>
       </el-menu>
@@ -48,7 +48,7 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
-import { DataAnalysis, Monitor, Ticket, UserFilled, Terminal } from '@element-plus/icons-vue'
+import { DataAnalysis, Monitor, Ticket, UserFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
