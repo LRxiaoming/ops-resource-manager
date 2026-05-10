@@ -73,6 +73,9 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 			username := strings.TrimSpace(parts[2])
 			password := strings.TrimSpace(parts[3])
 
+			// Debug log
+			fmt.Printf("Terminal connect: ip=%q port=%q user=%q\n", ip, port, username)
+
 			session, err := h.connectSSH(ip, port, username, password)
 			if err != nil {
 				conn.WriteMessage(websocket.TextMessage, []byte("E"+err.Error()))
