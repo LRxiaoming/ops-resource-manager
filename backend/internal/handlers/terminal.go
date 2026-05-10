@@ -57,6 +57,13 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 			continue
 		}
 
+		// Debug: log raw message hex
+		hexLen := len(msg)
+		if hexLen > 50 {
+			hexLen = 50
+		}
+		fmt.Printf("[Terminal] raw msg len=%d hex=%x\n", len(msg), msg[:hexLen])
+
 		msgType := string(msg[:1])
 		content := string(msg[1:])
 
@@ -73,8 +80,11 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 			username := strings.TrimSpace(parts[2])
 			password := strings.TrimSpace(parts[3])
 
-			// Debug log
-			fmt.Printf("Terminal connect: ip=%q port=%q user=%q\n", ip, port, username)
+			// Log to gin context
+			c.Set("terminal_ip", ip)
+			c.Set("terminal_port", port)
+			c.Set("terminal_user", username)
+			fmt.Printf("[Terminal] ip=%q port=%q user=%q passlen=%d\n", ip, port, username, len(password))
 
 			session, err := h.connectSSH(ip, port, username, password)
 			if err != nil {
