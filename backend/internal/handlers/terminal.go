@@ -69,7 +69,7 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 
 		switch msgType {
 		case "C": // Connect
-			parts := splitString(content, "\n")
+			parts := strings.Split(content, "\n")
 			if len(parts) < 4 {
 				conn.WriteMessage(websocket.TextMessage, []byte("Einvalid format"))
 				continue
@@ -80,10 +80,6 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 			username := strings.TrimSpace(parts[2])
 			password := strings.TrimSpace(parts[3])
 
-			// Log to gin context
-			c.Set("terminal_ip", ip)
-			c.Set("terminal_port", port)
-			c.Set("terminal_user", username)
 			fmt.Printf("[Terminal] ip=%q port=%q user=%q passlen=%d\n", ip, port, username, len(password))
 
 			session, err := h.connectSSH(ip, port, username, password)
@@ -121,7 +117,7 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 			sessionMu.Unlock()
 
 			if session != nil && !session.closed.Load() {
-				parts := splitString(content, "\n")
+				parts := strings.Split(content, "\n")
 				if len(parts) == 2 {
 					var cols, rows int
 					fmt.Sscanf(parts[0], "%d", &cols)
@@ -265,18 +261,4 @@ func (w connWriteWrapper) Write(p []byte) (n int, err error) {
 		return 0, err
 	}
 	return len(p), nil
-}
-
-func splitString(s string, sep string) []string {
-	var result []string
-	start := 0
-	for i := 0; i < len(s); i++ {
-		if i+len(sep) <= len(s) && s[i:i+len(sep)] == sep {
-			result = append(result, s[start:i])
-			start = i + len(sep)
-			i = start - 1
-		}
-	}
-	result = append(result, s[start:])
-	return result
 }
