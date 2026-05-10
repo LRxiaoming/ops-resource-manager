@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -67,10 +68,10 @@ func (h *TerminalHandler) HandleTerminal(c *gin.Context) {
 				continue
 			}
 
-			ip := parts[0]
-			port := parts[1]
-			username := parts[2]
-			password := parts[3]
+			ip := strings.TrimSpace(parts[0])
+			port := strings.TrimSpace(parts[1])
+			username := strings.TrimSpace(parts[2])
+			password := strings.TrimSpace(parts[3])
 
 			session, err := h.connectSSH(ip, port, username, password)
 			if err != nil {
